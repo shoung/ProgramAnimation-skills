@@ -17,10 +17,10 @@ class Set:
     def __init__(self, t):
         self.faces = []
         self.rng = random.Random(107)
-        self.az = (0.65) + 0.055 * math.sin(t)
-        self.el = 0.55
-        self.scale = 61
-        self.base = (478, 335)
+        self.az = -0.76 + 0.045 * math.sin(t)
+        self.el = 0.66
+        self.scale = 63
+        self.base = (547, 290)
 
     def camera(self, p):
         x, y, z = p
@@ -101,7 +101,8 @@ def render_set(t):
         [(s.camera(p)[0][0] + 11, s.camera(p)[0][1] + 17) for p in corners], fill=110
     )
     im.paste("#ac8977", (0, 0), shadow.filter(ImageFilter.GaussianBlur(10)))
-    s.box(0, -0.34, 0, 9.4, 0.32, 6.1, "#66b3ad")
+    s.box(0, -0.57, 0, 9.4, 0.22, 6.1, "#c6a68b")
+    s.box(0, -0.35, 0, 9.4, 0.34, 6.1, "#62b7b1")
     # Water surface is a backplate, so small objects always sort in front.
     for _, xy, c in sorted(s.faces, key=lambda item: item[0]):
         ImageDraw.Draw(im).polygon(xy, fill=c)
@@ -117,31 +118,34 @@ def render_set(t):
             fill=rng.choice(["#a2d6ce", "#7bbbc2", "#92c9c2"]),
             width=1,
         )
-    # Ring-shaped cliff mesh. Each face is split into two geological planes.
-    radii = [1 + rng.uniform(-0.16, 0.17) for _ in range(25)]
-    rings = []
-    for h, rad in [(-0.06, 1.12), (0.13, 1.08), (0.66, 0.91), (0.95, 0.80)]:
-        rings.append(
-            [
-                (
-                    3.16 * radii[i] * rad * math.cos(i * TAU / 25),
-                    h,
-                    1.70 * radii[i] * rad * math.sin(i * TAU / 25),
-                )
-                for i in range(25)
-            ]
-        )
-    for j in range(3):
-        for i in range(25):
-            k = (i + 1) % 25
-            a, b, c, e = rings[j][i], rings[j][k], rings[j + 1][k], rings[j + 1][i]
-            col = "#d7896b" if j else "#f4d6ac"
-            light = 0.8 + 0.17 * math.sin((i + 0.5) * TAU / 25 + 1)
-            s.face([a, b, c], shade(col, light))
-            s.face([a, c, e], shade(col, light + 0.07))
-    # Split the turf into sectors to avoid a single long polygon crossing every prop's depth.
-    for i in range(25):
-        s.face([(0, 0.95, 0), rings[-1][i], rings[-1][(i + 1) % 25]], "#a5bf79", bias=-0.12)
+
+    def terrace(cx, cz, rx, rz, height, grass, seed):
+        rand = random.Random(seed)
+        n = 11
+        ring = [
+            (
+                math.cos(i * TAU / n) * rx * rand.uniform(0.89, 1.08),
+                math.sin(i * TAU / n) * rz * rand.uniform(0.9, 1.09),
+            )
+            for i in range(n)
+        ]
+
+        def level(h, scale):
+            return [(cx + dx * scale, h, cz + dz * scale) for dx, dz in ring]
+
+        sand, foot, top = level(0.016, 1.14), level(0.095, 1.045), level(height, 0.91)
+        for i in range(n):
+            k = (i + 1) % n
+            light = 0.86 + 0.17 * math.cos(i * TAU / n - 1.9)
+            s.face([sand[i], sand[k], foot[k], foot[i]], shade("#f6d6b1", light + 0.05))
+            s.face([foot[i], foot[k], top[k], top[i]], shade("#d78a70", light))
+            s.face([(cx, height, cz), top[i], top[k]], grass, bias=-0.1)
+
+    terrace(0.54, -0.52, 1.94, 1.37, 0.95, "#a5c8a1", 51)
+    terrace(-0.93, 0.96, 1.08, 0.75, 0.46, "#a0c398", 52)
+    terrace(-2.72, 0.59, 0.40, 0.36, 0.78, "#9dbd98", 53)
+    terrace(-2.96, 1.62, 0.26, 0.22, 0.37, "#e2a18b", 54)
+    terrace(2.53, 0.06, 0.47, 0.43, 0.27, "#dea38e", 56)
     x, z = 0.82, -0.32
     for y, r1, r2, h, col in [
         (0, 0.42, 0.39, 0.22, "#ece1bc"),
@@ -203,49 +207,37 @@ def render_set(t):
     for dx in [-0.34, 0, 0.32]:
         s.box(x + dx, 0.98 if not dx else 1.12, z + 0.304, 0.13, 0.29 if not dx else 0.12, 0.028, "#51767a")
     for x, z, sz in [
-        (-2.25, 0.06, 0.73),
-        (-1.75, -0.49, 0.87),
-        (-1.92, 0.58, 0.55),
+        (-1.25, 0.92, 0.73),
+        (-0.81, 1.22, 0.87),
+        (-2.72, 0.59, 0.55),
         (1.67, -0.64, 0.68),
         (1.82, 0.32, 0.5),
         (1.46, 0.72, 0.39),
     ]:
-        s.lathe(x, 0.95, z, [(0, 0.055 * sz), (0.22 * sz, 0.055 * sz)], "#8a7050", 8)
+        soil = 0.78 if x < -2 else 0.46 if x < 0 else 0.95
+        s.lathe(x, soil, z, [(0, 0.055 * sz), (0.22 * sz, 0.055 * sz)], "#8a7050", 8)
         for j in range(3):
             r = (0.29 - 0.052 * j) * sz
             s.lathe(
                 x,
-                1.06 + j * 0.19 * sz,
+                soil + 0.11 + j * 0.19 * sz,
                 z,
                 [(0, r), (0.055 * sz, r * 1.04), (0.44 * sz, 0.03)],
                 ["#52896f", "#5e9a72", "#70ab75"][j],
                 7,
                 0.045,
             )
-    for i in range(8):
-        s.box(-1.45 + i * 0.105, 0.08 + i * 0.103, 1.63 - i * 0.095, 0.35, 0.10, 0.20, "#c8a77b")
-    for x, z, sz in [
-        (-3.18, 1.71, 0.43),
-        (2.87, 0.95, 0.37),
-        (-2.71, -1.64, 0.25),
-        (3.24, 0.85, 0.26),
-        (-3.32, 1.68, 0.22),
-    ]:
-        s.blob(x, 0.07, z, sz, "#c9997e", 0.83)
-    x, z = -2.85 + 0.15 * math.sin(t), 2.33
+    for j in range(12):
+        s.box(-1.04, 0.06 + j * 0.033, 2.39 - j * 0.083, 0.26, 0.06, 0.08, "#cca580")
+    for j in [0, 4, 9]:
+        for x in [-1.16, -0.92]:
+            s.box(x, 0.015, 2.39 - j * 0.083, 0.045, 0.14 + j * 0.033, 0.05, "#a57a5c")
+    x, z = -3.95 + 0.15 * math.sin(t), 0.83
     s.lathe(x, 0.06, z, [(0, 0.11), (0.12, 0.21)], "#a7634d", 10)
     s.face([(x, 0.16, z), (x, 0.77, z), (x - 0.30, 0.18, z)], "#fff1cc")
     s.lathe(x, 0.13, z, [(0, 0.014), (0.68, 0.014)], "#685944", 6)
-    # Foam at the cliff's shoreline follows the irregular mesh perimeter.
-    for i in range(115):
-        a = rng.uniform(0, TAU)
-        u = a / TAU * 25
-        r = radii[int(u)] * (1 - u % 1) + radii[(int(u) + 1) % 25] * (u % 1)
-        f = r * 1.13 + rng.uniform(0.00, 0.08) + 0.02 * math.sin(t + a * 3)
-        x, z = 3.16 * f * math.cos(a), 1.7 * f * math.sin(a)
-        s.blob(x, 0.014, z, rng.uniform(0.035, 0.079), "#ede8cc", 0.35)
     # Puffy floating clouds are pinched from small overlapping ellipsoids.
-    for cx, cy, cz, k in [(-3.6, 2.7, -1.4, 0.85), (2.14, 3.8, -2.86, 0.91)]:
+    for cx, cy, cz, k in [(-3.6, 2.7, -1.4, 0.85), (2.14, 2.68, -2.86, 0.65)]:
         for dx, dy, r in [(-0.35, 0, 0.31), (-0.06, 0.12, 0.40), (0.22, 0.11, 0.33), (0.47, -0.01, 0.25)]:
             s.blob(cx + (dx + 0.17 * math.sin(t)) * k, cy + dy * k, cz, r * k, "#f5e8d2", 0.68)
     for _, xy, c in sorted(s.faces, key=lambda item: item[0]):

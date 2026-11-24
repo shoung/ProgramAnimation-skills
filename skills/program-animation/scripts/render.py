@@ -19,6 +19,12 @@ def main():
     p.add_argument("--fps", type=int, default=24)
     p.add_argument("--audio", type=Path, help="Optional pre-mixed audio track for the MP4")
     p.add_argument("--phase", type=float, default=0.85, help="Still image phase in radians")
+    p.add_argument(
+        "--title",
+        default="燈塔",
+        help="Text styled within the scene; pass an empty string for a clean frame",
+    )
+    p.add_argument("--font", type=Path, help="Full font covering a custom title (TTF, OTF, or TTC)")
     args = p.parse_args()
     if (
         not math.isfinite(args.seconds)
@@ -31,14 +37,14 @@ def main():
         p.error("--audio requires --video")
     art = renderer(args.style)
     if args.png:
-        im = checked_frame(0, lambda _: art(args.phase), SIZE)
+        im = checked_frame(0, lambda _: art(args.phase, args.title, args.font), SIZE)
         args.png.parent.mkdir(parents=True, exist_ok=True)
         im.save(args.png, format="PNG")
     else:
         count = max(1, round(args.seconds * args.fps))
 
         def frame(i):
-            return art(math.tau * i / count)
+            return art(math.tau * i / count, args.title, args.font)
 
         encode(
             args.video,

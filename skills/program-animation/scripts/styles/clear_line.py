@@ -4,6 +4,7 @@ import math
 
 from coast import BASE, SIZE, H, Mark, W, draw_mark
 from headland import landscape
+from lettering import titled
 from PIL import Image, ImageChops, ImageDraw
 
 SCALE = 2
@@ -72,6 +73,7 @@ def hatching(im, mark):
     im.paste(color, (left, top), ImageChops.multiply(strokes, mask))
 
 
+@titled("clear-line")
 def frame(t):
     size = (W * SCALE, H * SCALE)
     im = Image.new("RGB", size)

@@ -5,6 +5,7 @@ from functools import lru_cache
 import numpy as np
 from coast import SIZE, H, W, draw_mark
 from headland import landscape
+from lettering import titled
 from PIL import Image, ImageDraw, ImageFilter
 
 # Emitted sRGB color and projected surface coverage are independent: dark red paint
@@ -48,6 +49,7 @@ def samples():
     return tuple(rng.random((H, W), dtype=np.float32) for _ in range(3))
 
 
+@titled("point-cloud")
 def frame(t):
     surface = Image.new("L", SIZE, ROLE["sky"])
     pen = ImageDraw.Draw(surface)

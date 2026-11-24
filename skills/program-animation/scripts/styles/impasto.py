@@ -5,6 +5,7 @@ import random
 
 import numpy as np
 from coast import H, W, gradient, grain, paint, scene
+from lettering import titled
 from PIL import ImageDraw
 
 COLORS = {
@@ -28,6 +29,7 @@ COLORS = {
 }
 
 
+@titled("impasto")
 def frame(t):
     sky = gradient([(0, "#524e98"), (90, "#8d6eae"), (180, "#e39b9d"), (305, "#efbb8b")])
     im = paint(scene(t), COLORS, sky)

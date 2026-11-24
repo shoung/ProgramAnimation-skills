@@ -1,107 +1,121 @@
-"""Survey sheet with an orthographic elevation, lantern plan and measured coastal profile."""
+"""Graphite field survey with two instrument plans, loose leaders and a worn paper edge."""
 
 import math
 
-from coast import SIZE, draw_mark, grain, scene
+import numpy as np
+from coast import SIZE, H, Mark, W, draw_mark, grain
+from headland import landscape
+from lettering import titled
 from PIL import Image, ImageDraw, ImageFont
 
-INK = "#745e46"
-FAINT = "#ad9978"
-PAPER = "#eddfbd"
+INK = "#746044"
+PALE = "#b39b74"
+PAPER = "#e6d3a6"
 
 
+@titled("drafting")
 def frame(t):
     im = Image.new("RGB", SIZE, PAPER)
     d = ImageDraw.Draw(im)
-    font = ImageFont.load_default(size=12)
-    small = ImageFont.load_default(size=10)
 
-    def label(x, y, s, face=small, color=INK):
-        d.text((x, y), s, fill=color, font=face)
+    def note(x, y, s, n=9):
+        d.text((x, y), s, fill=INK, font=ImageFont.load_default(size=n))
 
-    def dim(x, y, x2, y2):
-        d.line((x, y, x2, y2), fill=FAINT)
-        for a, b in [(x, y), (x2, y2)]:
-            d.line((a - 3, b + 4, a + 3, b - 4), fill=INK)
+    def leader(points, s):
+        d.line(points, fill=PALE)
+        x, y = points[-1]
+        note(x + 4, y - 6, s)
 
-    d.rectangle((18, 17, 942, 522), outline=FAINT)
-    d.line((38, 68, 921, 68), fill=INK)
-    label(38, 28, "PHAROS", ImageFont.load_default(size=29))
-    label(181, 45, "COASTAL SURVEY   /   LIGHT STATION", font)
-    label(790, 45, "PLATE  VII     1 : 160", font)
-    # Architectural elevation is drawn at its own scale.
-    x = 160
-    d.line((x, 90, x, 451), fill=FAINT)
-    d.line((55, 445, 264, 445), fill=INK)
-    d.polygon([(x - 36, 430), (x - 19, 169), (x + 19, 169), (x + 36, 430)], outline=INK)
-    for y in [184, 204, 250, 276, 341, 370, 425]:
-        w = 19 + (y - 169) * 17 / 261
-        d.line((x - w, y, x + w, y), fill=INK)
-        for i in range(4):
-            d.line((x + w - 8 + i * 2, y + 1, x + w - 10 + i * 2, y + 9), fill=FAINT)
-    for y in [218, 294, 388]:
-        d.rectangle((x - 5, y, x + 4, y + 12), outline=INK)
-    d.rectangle((x - 43, 430, x + 43, 438), outline=INK)
-    d.rectangle((x - 47, 438, x + 47, 444), outline=INK)
-    for y, w, h in [(166, 30, 5), (151, 29, 15), (128, 17, 22), (123, 22, 5)]:
-        d.rectangle((x - w, y, x + w, y + h), outline=INK)
-    for xx in range(x - 27, x + 29, 7):
-        d.line((xx, 152, xx, 165), fill=FAINT)
-    d.polygon(
-        [(x - 23, 123), (x - 17, 117), (x - 7, 109), (x, 101), (x + 9, 110), (x + 22, 123)], outline=INK
-    )
-    d.line((x, 101, x, 91), fill=INK)
-    dim(77, 102, 77, 444)
-    label(41, 271, "28.60")
-    dim(123, 458, 196, 458)
-    label(141, 462, "5.40")
-    label(90, 488, "A   /   TOWER ELEVATION", font)
-    # Lantern floor plan. Rotating rays make the survey sheet an animation.
-    cx, cy = 374, 166
-    for r in [51, 42, 36, 12, 7]:
-        d.ellipse((cx - r, cy - r, cx + r, cy + r), outline=FAINT if r in {51, 7} else INK)
-    for j in range(12):
-        a = j * math.tau / 12
-        d.line(
-            (cx + 36 * math.cos(a), cy + 36 * math.sin(a), cx + 43 * math.cos(a), cy + 43 * math.sin(a)),
-            fill=INK,
-        )
-    for a in [t - 0.18, t + 0.18]:
-        d.line((cx, cy, cx + 48 * math.cos(a), cy + 48 * math.sin(a)), fill="#a86946")
-    label(312, 226, "B   /   LANTERN PLAN", font)
-    # Plot the same island in pencil, with stipple and hatching on the cliff.
-    profile = Image.new("RGB", SIZE, PAPER)
-    pd = ImageDraw.Draw(profile)
-    for i, m in enumerate(scene(t)):
-        if m.role in {"sea", "sun", "cloud", "distant", "mountain", "face", "snow", "ridge"} or (
-            m.role == "ripple" and i % 8
-        ):
+    # Large coastal elevation and a ray diagram. Leave the left margin free for measurements.
+    coast = Image.new("RGB", SIZE, PAPER)
+    pd = ImageDraw.Draw(coast)
+    for m in landscape(t):
+        if m.role in {"sun", "cloud", "sea", "foam", "crest", "leaf", "lip"}:
             continue
-        color = FAINT if m.role in {"ripple", "foam", "leaf", "ochre"} else INK
-        draw_mark(pd, m, color if m.kind == "line" else PAPER, color)
-        if m.role == "shade":
-            a, b, c = m.xy
-            for n in range(1, 10):
-                f = n / 10
-                pd.line(
-                    [
-                        (a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f),
-                        (a[0] + (c[0] - a[0]) * f, a[1] + (c[1] - a[1]) * f),
-                    ],
-                    fill=FAINT,
-                )
-    profile = profile.crop((30, 49, 940, 475)).resize((634, 297), Image.Resampling.LANCZOS)
-    im.paste(profile, (283, 247))
-    # Reestablish the sheet's lower margin after inserting the coastal section.
-    d.rectangle((283, 487, 942, 522), fill=PAPER)
-    d.line((18, 522, 942, 522), fill=FAINT)
-    d.line((942, 247, 942, 522), fill=FAINT)
-    label(540, 490, "C   /   SOUTHERN APPROACH", font)
-    for j in range(5):
-        d.rectangle((753 + j * 26, 208, 779 + j * 26, 213), fill=INK if j % 2 == 0 else PAPER, outline=INK)
-    label(752, 218, "0          5         10         15 m")
-    label(556, 119, "OPTICAL ASSEMBLY", font)
-    label(556, 143, "01   Fresnel lens")
-    label(556, 163, "02   Lantern gallery")
-    d.line((426, 155, 479, 134, 538, 134), fill=FAINT)
-    return grain(im, 3.2, 0.8)
+        pts = [(84 + x * 1.10, 8 + y * 1.03) for x, y in m.xy]
+        xy = Mark(m.kind, m.role, pts, m.width)
+        c = PALE if m.role in {"mountain", "face", "ridge", "seam"} else INK
+        draw_mark(pd, xy, c if m.kind == "line" else PAPER, c)
+        if m.role in {"shade", "shadow", "pine", "roof"}:
+            mask = Image.new("L", SIZE)
+            draw_mark(ImageDraw.Draw(mask), xy, 255)
+            tone = coast.copy()
+            q = ImageDraw.Draw(tone)
+            xs, ys = zip(*pts)
+            y0, y1 = min(ys), max(ys)
+            for x in range(int(min(xs) - y1 + y0) - 2, int(max(xs) + 2), 4):
+                q.line((x, y1, x + (y1 - y0) * 0.68, y0), fill="#a18a63", width=2)
+            coast.paste(tone, (0, 0), mask)
+    reveal = np.broadcast_to(np.clip((np.arange(W) - 330) / 66, 0, 1), (H, W))
+    im.paste(coast, mask=Image.fromarray(np.uint8(reveal * 255)))
+    for j in range(16):
+        y = 451 + j * 3
+        d.line((390 + (j * 61) % 131, y, 904 - (j * 41) % 140, y + 0.7), fill="#c8b68e")
+    lamp = (773, 105)
+    for angle in [-0.07 + 0.02 * math.sin(t), 0.16 + 0.04 * math.sin(t)]:
+        d.line((464, lamp[1] + 309 * angle, *lamp), fill="#a58f6b")
+    note(482, 64, "AA  /  OPTICAL AXIS", 9)
+    # Measured elevation. The separate tower is larger than the profile view.
+    x = 131
+    d.line((x, 78, x, 493), fill=PALE)
+    d.polygon([(x - 34, 462), (x - 20, 181), (x + 19, 181), (x + 36, 462)], outline=INK, width=2)
+    for y in [182, 209, 263, 273, 337, 370, 451]:
+        w = 20 + (y - 181) * 0.057
+        d.line((x - w, y, x + w, y + 1), fill=INK)
+    for y in [225, 304, 420]:
+        d.rectangle((x - 5, y, x + 6, y + 15), outline=INK)
+    for y, w, h in [(460, 42, 8), (468, 47, 6), (177, 33, 7), (157, 32, 19), (130, 17, 26), (125, 21, 5)]:
+        d.rectangle((x - w, y, x + w, y + h), outline=INK, width=2)
+    for xx in range(x - 28, x + 29, 7):
+        d.line((xx, 158, xx, 176), fill=INK)
+    d.polygon([(x - 22, 125), (x - 14, 117), (x, 102), (x + 15, 118), (x + 23, 125)], outline=INK)
+    d.line((x, 102, x, 89), fill=INK)
+    for i in range(50):
+        y = 185 + i * 5
+        w = 20 + (y - 181) * 0.057
+        d.line((x + w - 9, y + 7, x + w - 1, y), fill=PALE)
+    d.line((65, 104, 65, 470), fill=PALE)
+    for y in [105, 178, 263, 337, 461, 474]:
+        d.line((58, y, 99, y - 1), fill=PALE)
+    leader([(160, 163), (202, 151), (216, 150)], "Gallery")
+    leader([(153, 330), (196, 321), (218, 318)], "Masonry")
+    leader([(170, 465), (202, 456), (219, 456)], "Plinth")
+    # Lantern ring and lens section, retained at field-notebook scale.
+    for cx, cy, r in [(351, 198, 49), (303, 418, 43)]:
+        for f in [1.16, 1, 0.83, 0.78]:
+            rad = r * f
+            d.ellipse((cx - rad, cy - rad, cx + rad, cy + rad), outline=PALE if f > 1 else INK)
+        for j in range(16):
+            a = j * math.tau / 16
+            d.line(
+                (
+                    cx + r * math.cos(a),
+                    cy + r * math.sin(a),
+                    cx + r * 1.10 * math.cos(a),
+                    cy + r * 1.10 * math.sin(a),
+                ),
+                fill=INK,
+            )
+        d.line((cx - r - 12, cy, cx + r + 12, cy), fill=PALE)
+        if cy > 300:
+            for a in [t, t + math.pi / 2]:
+                ox, oy = math.cos(a) * r * 0.68, math.sin(a) * r * 0.68
+                d.line((cx - ox, cy - oy, cx + ox, cy + oy), fill=INK)
+    d.line((167, 68, 373, 68), fill=PALE)
+    note(265, 82, "01   Tower elevation")
+    note(265, 95, "02   Lantern gallery")
+    note(300, 270, "Horizontal section  /  A")
+    note(305, 285, "Scale in metres")
+    note(80, 494, "Elevation   1 : 160")
+    d.rectangle((916, 475, 933, 503), fill="#995039")
+    d.line((920, 480, 927, 480, 927, 492, 921, 492, 921, 499), fill="#dfc795", width=2)
+    y, x = np.ogrid[:H, :W]
+    edge = np.minimum(np.minimum(x, W - 1 - x), np.minimum(y, H - 1 - y))
+    weather = np.exp(-edge / 25) * (0.15 + 0.055 * np.sin(x * 0.024 + y * 0.043))
+    # Pressure and paper tooth vary the graphite independently of the aged ground.
+    image = np.asarray(im, dtype=float)
+    graphite = np.maximum(np.array([230, 211, 166]) - image, 0)
+    ghost = np.roll(graphite, (1, 2), axis=(0, 1))
+    tooth = 0.09 * np.sin(x * 0.37 + y * 0.41) + 0.07 * np.sin(x * 0.17 - y * 0.12)
+    paper = (image + graphite * tooth[:, :, None] - ghost * 0.095) * (1 - weather[:, :, None])
+    return grain(Image.fromarray(np.uint8(np.clip(paper, 0, 255))), 2.7, 0.95)

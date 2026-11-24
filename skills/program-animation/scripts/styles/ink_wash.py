@@ -1,114 +1,150 @@
-"""Wet mountain washes, broken dry-brush marks and vermilion on warm paper."""
+"""Pooled black ink, dry splits and untouched paper in a shore-and-mountains study."""
 
+import math
 import random
+from functools import lru_cache
 
 import numpy as np
-from coast import BASE, SIZE, H, W, draw_mark, grain, scene
-from PIL import Image, ImageDraw, ImageFilter
+from coast import SIZE, H, W, draw_mark, grain
+from lettering import titled
+from PIL import Image, ImageDraw
+from print_landscape import PALETTE, plate_scene
 
 COLORS = {
-    "sky": "#f0ecdd",
-    "sun": "#bd5a47",
-    "cloud": None,
-    "distant": "#c5c4b8",
-    "mountain": "#8c9086",
-    "face": "#5e635f",
-    "snow": "#e5e4d5",
-    "ridge": "#787c74",
-    "sea": "#e4e3d7",
-    "ripple": "#a4a69a",
-    "foam": "#f5f0df",
-    "stone": "#565c54",
-    "shade": "#373e39",
-    "ochre": "#97988a",
-    "crack": "#333b35",
-    "land": "#74796c",
-    "pine": "#28322d",
-    "leaf": "#4b554c",
-    "trunk": "#4b5048",
-    "wall": "#f3edda",
-    "shadow": "#c4c2b1",
-    "red": "#3a403a",
-    "roof": "#292e2c",
-    "dark": "#232b29",
-    "glass": "#bcbfaf",
-    "lamp": "#ede2bd",
-    "sail": "#d4d0bd",
-    "hull": "#474c42",
-    "bird": "#64685d",
+    **PALETTE,
+    "sun": "#ba5846",
+    "mountain": "#cac8bc",
+    "face": "#62635e",
+    "crest": "#e6e4d6",
+    "ridge": "#aaa99f",
+    "sea": "#e9e7d9",
+    "stone": "#dedacb",
+    "shade": "#282925",
+    "seam": "#484741",
+    "foam": "#676861",
+    "land": "#383932",
+    "rail": "#30332e",
+    "step": "#737269",
+    "lip": "#c6c3b3",
+    "pine": "#232724",
+    "leaf": "#383c36",
+    "trunk": "#393931",
+    "wall": "#f3ecdb",
+    "red": "#242725",
+    "roof": "#1e211f",
+    "dark": "#292c29",
+    "shadow": "#545650",
+    "glass": "#9b9687",
+    "lamp": "#e7ca91",
+    "hull": "#262a29",
+    "sail": "#6d6f69",
+    "bird": "#545550",
 }
 
 
-def pigment():
-    # Broad blooms follow the damp sheet, while dry fibers break the deposited ink.
+@lru_cache(maxsize=1)
+def damp_sheet():
     rng = np.random.default_rng(114)
 
-    def field(w, h):
-        noise = Image.fromarray(rng.integers(0, 255, (h, w), dtype="uint8"))
-        return np.asarray(noise.resize(SIZE, Image.Resampling.BICUBIC), dtype=float) / 255
+    def noise(w, h):
+        im = Image.fromarray(rng.integers(0, 255, (h, w), dtype="uint8")).resize(
+            SIZE, Image.Resampling.BICUBIC
+        )
+        return (np.asarray(im, dtype=float) - 128) / 128
 
-    return 0.56 * field(25, 14) + 0.32 * field(110, 58) + 0.12 * field(530, 110)
+    return 0.52 * noise(37, 22) + 0.29 * noise(113, 68) + 0.19 * noise(470, 180)
 
 
+@titled("ink-wash")
 def frame(t):
-    colors = {**BASE, **COLORS}
-    im = Image.new("RGB", SIZE, colors["sky"])
-    rng = random.Random(25)
-    blooms = pigment()
-    yy, xx = np.mgrid[:H, :W]
-    for i, m in enumerate(scene(t)):
-        if colors[m.role] is None or (m.role == "ripple" and i % 4):
-            continue
-        if m.role in {"distant", "mountain", "face", "snow"}:
-            mask = Image.new("L", SIZE)
-            draw_mark(ImageDraw.Draw(mask), m, 255)
-            a = np.array(mask.filter(ImageFilter.GaussianBlur(1.6)), dtype=float)
-            wet = np.clip(0.98 - (np.arange(H) - 150) * 0.004, 0.22, 1)
-            # Mountain feet dissolve into mist; feather pigment down the slopes.
-            wet = np.clip((332 - np.arange(H)) / 132, 0.04, 1) * wet
-            strokes = 0.5 + 0.5 * np.sin(
-                0.47 * xx + 0.40 * yy + 9 * np.sin(yy * 0.037 + xx * 0.011) + 22 * blooms
-            )
-            wash = np.clip(0.20 + 1.10 * blooms + 0.24 * strokes, 0, 1)
-            if m.role == "snow":
-                wash *= 0.8
-            mask = Image.fromarray(np.uint8(a * wet[:, None] * wash))
-            im.paste(colors[m.role], (0, 0), mask)
-            continue
+    wash = damp_sheet()
+    y, x = np.mgrid[:H, :W]
+    im = Image.new("RGB", SIZE, "#eeebde")
+    d = ImageDraw.Draw(im)
+    rng = random.Random(934)
+    for m in plate_scene(t, summit=221, horizon=322, cloud_style="none"):
         if m.role == "ridge":
             continue
-        if m.role in {"shade", "ochre"}:
-            wash = Image.new("L", SIZE)
-            draw_mark(ImageDraw.Draw(wash), m, 255)
-            opacity = np.clip(0.20 + (blooms - 0.32) * 1.4, 0.1, 0.82)
-            im.paste(colors[m.role], (0, 0), Image.fromarray(np.uint8(np.asarray(wash) * opacity)))
-        else:
-            draw_mark(ImageDraw.Draw(im), m, colors[m.role])
-        if m.role in {"stone", "shade", "ochre"}:
+        color = COLORS[m.role]
+        if m.role in {"mountain", "face", "crest"}:
+            peak = min(m.xy, key=lambda p: p[1])
             mask = Image.new("L", SIZE)
             draw_mark(ImageDraw.Draw(mask), m, 255)
-            scratch = im.copy()
-            d = ImageDraw.Draw(scratch)
-            x0, y0, x1, y1 = mask.getbbox() or (0, 0, 1, 1)
-            for _ in range(max(4, (x1 - x0) * (y1 - y0) // 255)):
-                x, y = rng.uniform(x0, x1), rng.uniform(y0, y1)
-                d.line(
-                    (x, y, x - 6, y + rng.uniform(4, 20)),
-                    fill=rng.choice(["#353b35", "#a5a495", "#707368"]),
-                    width=rng.choice([1, 1, 2]),
+            near = peak[0] < 210
+            f = np.clip((338 - y) / 95, 0, 1)
+            strength = (0.35 + 0.6 * near) * f * (0.89 + 0.22 * wash)
+            if m.role == "face" and near:
+                color = "#262923"
+            im.paste(color, (0, 0), Image.fromarray(np.uint8(np.clip(np.asarray(mask) * strength, 0, 255))))
+            continue
+        draw_mark(d, m, color)
+        if m.role == "sea":
+            for i in range(140):
+                py = rng.uniform(325, 539)
+                px = rng.uniform(-80, 960) + 3 * math.sin(t + py)
+                length = rng.uniform(3, 72) * (1 + (py - 320) / 310)
+                d.polygon(
+                    [
+                        (px, py),
+                        (px + length * 0.28, py - rng.uniform(0.3, 1.8)),
+                        (px + length, py),
+                        (px + length * 0.36, py + 0.4),
+                    ],
+                    fill=rng.choice(["#cac8bc", "#d3d1c4", "#acaba1"]),
                 )
-            im.paste(scratch, (0, 0), mask)
-    # A small carved collector's seal in the margin.
-    d = ImageDraw.Draw(im)
-    d.rounded_rectangle((46, 72, 69, 99), radius=2, outline="#ac5043", width=3)
-    for line in [
-        [(51, 76), (51, 94), (56, 94), (56, 77)],
-        [(59, 77), (64, 77), (64, 83), (60, 83), (60, 93), (65, 93)],
-    ]:
-        d.line(line, fill="#ac5043", width=2)
-    # Ragged, ink-wicked edges survive reduction better than uniform digital contours.
-    offsets = np.rint((blooms - 0.5) * 5).astype(int)
-    ink = np.asarray(im)[np.clip(yy + offsets, 0, H - 1), np.clip(xx - offsets, 0, W - 1)].astype(float)
-    absorb = (blooms - 0.49) * (0.19 * (241 - ink[:, :, 1]) + 5)
-    im = Image.fromarray(np.uint8(np.clip(ink + absorb[:, :, None], 0, 255)))
-    return grain(im, 3.2, 1)
+        if m.role == "stone":
+            xs, ys = zip(*m.xy)
+            w = max(xs) - min(xs)
+            if w < 45:
+                continue
+            mask = Image.new("L", SIZE)
+            draw_mark(ImageDraw.Draw(mask), m, 255)
+            strokes = im.copy()
+            q = ImageDraw.Draw(strokes)
+            for _ in range(max(2, int(w / 27))):
+                px = rng.uniform(min(xs), max(xs))
+                py = rng.uniform(min(ys) - 9, max(ys))
+                a = rng.uniform(4, 16)
+                q.polygon(
+                    [
+                        (px, py),
+                        (px + a, py - 2),
+                        (px + a * 0.7, py + 12),
+                        (px + a * 1.3, py + 24),
+                        (px + a * 0.65, py + 31),
+                        (px - 2, py + 14),
+                    ],
+                    fill=rng.choice(["#32342e", "#56564f", "#808078"]),
+                )
+            im.paste(strokes, (0, 0), mask)
+        if m.role == "foam":
+            d.line([(px + 2, py + 3) for px, py in m.xy], fill="#74736a", width=2)
+            xs, ys = zip(*m.xy)
+            left, right = min(xs), max(xs)
+            y0 = max(ys) + 5
+            # The brush pools at touchdown and dries into separated hairs across the water.
+            for j in range(3):
+                a = left + rng.uniform(-17, 7)
+                b = a + (right - left) * rng.uniform(0.28, 1.15)
+                yy = y0 + j * 3.3
+                d.polygon(
+                    [
+                        (a, yy),
+                        (a + (b - a) * 0.17, yy - 1.1),
+                        (b, yy - 0.7),
+                        (a + (b - a) * 0.32, yy + 0.9),
+                    ],
+                    fill=["#5b5e55", "#989990", "#c0bfb4"][j],
+                )
+    # Directional dry fibers lift small flecks only from the dark ink deposits.
+    offset = np.rint(3.8 * wash).astype(int)
+    ink = np.asarray(im)[np.clip(y + offset, 0, H - 1), np.clip(x - offset, 0, W - 1)].astype(float)
+    fiber = 0.5 + 0.5 * np.sin(x * 0.63 + y * 0.105 + wash * 5)
+    dry = np.maximum(0, wash + 0.18) * (244 - ink[:, :, 0]) * (0.13 + 0.19 * fiber)
+    dry += (
+        np.clip((fiber - 0.93) * 8, 0, 1)
+        * np.clip((wash - 0.18) * 3, 0, 1)
+        * np.clip(109 - ink[:, :, 0], 0, 100)
+        * 0.62
+    )
+    return grain(Image.fromarray(np.uint8(np.clip(ink + dry[:, :, None], 0, 255))), 2.1, 0.7)

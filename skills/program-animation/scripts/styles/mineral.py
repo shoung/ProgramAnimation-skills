@@ -1,58 +1,64 @@
-"""Blue-green mineral pigments and angular planes on gold silk."""
+"""Stone-blue shadow planes and malachite pigment on a softly burnished gold ground."""
 
-import random
-
-from coast import BASE, SIZE, draw_mark, gradient, grain, scene
+import numpy as np
+from coast import H, W, draw_mark, gradient, grain
+from lettering import titled
 from PIL import Image, ImageDraw
+from print_landscape import PALETTE, plate_scene, wavelets
 
 COLORS = {
-    "sun": "#bd533a",
-    "cloud": "#e6ce99",
-    "distant": "#b1ad80",
-    "mountain": "#609785",
-    "face": "#397584",
-    "snow": "#9bb797",
-    "ridge": "#899f7d",
-    "sea": "#a2b69a",
-    "ripple": "#c8c398",
-    "foam": "#d8cda1",
-    "stone": "#609080",
-    "ochre": "#61a59b",
-    "shade": "#316e79",
-    "land": "#899756",
-    "wall": "#e7d4a0",
-    "shadow": "#b9a67a",
-    "red": "#ae5237",
-    "roof": "#754d37",
-    "pine": "#416c52",
-    "leaf": "#68905d",
+    **PALETTE,
+    "sun": "#b44931",
+    "cloud": "#ecdaa7",
+    "mountain": "#73ad87",
+    "face": "#147d91",
+    "crest": "#aabd78",
+    "ridge": "#579879",
+    "sea": "#aaa981",
+    "stone": "#63b69a",
+    "shade": "#275985",
+    "lip": "#d3ad54",
+    "seam": "#459689",
+    "land": "#a7a35f",
+    "foam": "#c5ad67",
+    "wall": "#ebdbaf",
+    "red": "#aa4938",
+    "shadow": "#b0a180",
+    "pine": "#396853",
+    "leaf": "#609261",
 }
 
 
+@titled("mineral")
 def frame(t):
-    sky = gradient([(0, "#a88954"), (180, "#c6ab72"), (355, "#e0c48a")])
-    marks = scene(t)
-    rng = random.Random(39)
-    for m in marks:
-        draw_mark(ImageDraw.Draw(sky), m, COLORS.get(m.role, BASE[m.role]))
-        if m.role not in {"mountain", "stone"}:
-            continue
-        mask = Image.new("L", SIZE)
-        draw_mark(ImageDraw.Draw(mask), m, 255)
-        tile = sky.copy()
-        d = ImageDraw.Draw(tile)
-        xs, ys = zip(*m.xy)
-        for _ in range(27):
-            x, y = rng.uniform(min(xs), max(xs)), rng.uniform(min(ys), max(ys))
-            s = rng.uniform(14, 80)
+    im = gradient([(0, "#b29863"), (163, "#c3a26b"), (346, "#d9bd86")])
+    d = ImageDraw.Draw(im)
+    for m in plate_scene(t, summit=190, horizon=376):
+        draw_mark(d, m, COLORS[m.role])
+        if m.role == "mountain":
+            points = m.xy
+            top = min(points, key=lambda p: p[1])
+            left, right = points[0], points[-1]
+            span = right[0] - left[0]
             d.polygon(
-                [(x, y), (x + s * 0.77, y + s), (x - s * 0.2, y + s * 0.7)],
-                fill=rng.choice(["#48877a", "#739f83", "#61999b", "#48828a", "#94ac7e"]),
+                [top, (top[0] - 0.36 * span, left[1]), (top[0] - 0.12 * span, left[1])], fill="#50a491"
             )
-        sky.paste(tile, (0, 0), mask)
-    d = ImageDraw.Draw(sky)
-    for x in range(10, 960, 13):
-        for y in range(8, 536, 18):
-            if rng.random() < 0.12:
-                d.line((x, y, x + 2, y + 1), fill="#d6bd87")
-    return grain(sky, 3.3, 1.4)
+            d.polygon(
+                [top, (top[0] + 0.04 * span, right[1]), (top[0] + 0.19 * span, right[1])], fill="#288e94"
+            )
+            d.polygon(
+                [top, (top[0] + 0.19 * span, right[1]), (top[0] + 0.31 * span, right[1])], fill="#386d91"
+            )
+        if m.role == "sea":
+            wavelets(d, t, 376, ["#999871", "#b8b489", "#8f916d", "#c9bd91"], 720)
+    y, x = np.ogrid[:H, :W]
+    edge = np.maximum(abs((x - 480) / 480) ** 5, abs((y - 270) / 270) ** 6)
+    fibers = 1.5 * np.sin(y * 2.5) + 1.4 * np.sin(0.031 * y + 0.9 * np.sin(x * 0.007))
+    weave = 0.68 * np.sin(x * 2.4) + 0.83 * np.cos(y * 2.1 + x * 0.009)
+    flakes = np.maximum(0, np.sin(x * 1.73 + y * 0.16) * np.cos(y * 1.91) - 0.95) * 98
+    toned = (
+        np.asarray(im).astype(float) * (1 - 0.14 * edge[:, :, None])
+        + (fibers + weave)[:, :, None]
+        + flakes[:, :, None] * [1.0, 0.84, 0.44]
+    )
+    return grain(Image.fromarray(np.uint8(np.clip(toned, 0, 255))), 2.8, 1.4)

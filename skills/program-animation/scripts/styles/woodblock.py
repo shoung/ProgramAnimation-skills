@@ -1,43 +1,48 @@
-"""Bokashi sky, carved outlines and patterned waves of a relief print."""
+"""Indigo bokashi, vermilion sun and carved ribbons of cloud above short printed waves."""
 
-import math
-
-from coast import gradient, grain, paint, scene
-from PIL import ImageDraw
+import numpy as np
+from coast import draw_mark, gradient, grain
+from lettering import titled
+from PIL import Image, ImageDraw
+from print_landscape import PALETTE, plate_scene, wavelets
 
 COLORS = {
-    "sun": "#c34e32",
-    "cloud": "#fbedd0",
-    "distant": "#a5b5ad",
-    "mountain": "#5585a1",
-    "face": "#355c79",
-    "snow": "#f7e8c6",
-    "ridge": "#55748a",
-    "sea": "#416c82",
-    "ripple": None,
-    "foam": "#f2dec0",
-    "stone": "#c59a58",
-    "ochre": "#e3b866",
-    "shade": "#9c7648",
-    "land": "#98966a",
-    "red": "#ad4733",
+    **PALETTE,
+    "sun": "#b54632",
+    "cloud": "#f4e8c8",
+    "mountain": "#87a9b8",
+    "face": "#375e84",
+    "crest": "#f7e8d0",
+    "ridge": "#567c91",
+    "sea": "#476e8a",
+    "stone": "#d5ac69",
+    "shade": "#b58554",
+    "pine": "#43776c",
+    "land": "#9e995d",
+    "red": "#b54734",
+    "wall": "#f1e4ca",
+    "roof": "#914c3a",
 }
 
 
+@titled("woodblock")
 def frame(t):
-    marks = scene(t)
-    sky = gradient([(0, "#243f68"), (70, "#829eaf"), (181, "#e9cfaa"), (315, "#f2e1bb")])
-    groups = next(i for i, m in enumerate(marks) if m.role == "sea") + 1
-    edge = lambda m: (
-        "#444b49" if m.role not in {"face", "snow", "shade", "ochre", "shadow", "distant"} else None
-    )
-    im = paint(marks[:groups], COLORS, sky, edge)
+    im = gradient([(0, "#253f63"), (58, "#607895"), (152, "#dfc7a4"), (316, "#f1dfbb")])
     d = ImageDraw.Draw(im)
-    for row, y in enumerate(range(322, 554, 9)):
-        pts = [
-            (x, y + 2.6 * math.sin(0.057 * x + row * 0.7 + 0.65 * math.sin(t))) for x in range(-2, 965, 3)
-        ]
-        d.line(pts, fill="#a7bcc0" if row % 3 else "#d6d4bd", width=2)
-        for x in range((row * 31) % 77 - 50, 960, 77):
-            d.arc((x, y - 2, x + 41, y + 5), 0, 175, fill="#274f67", width=1)
-    return grain(paint(marks[groups:], COLORS, im, edge), 3, 1.6)
+    for m in plate_scene(t, summit=196, horizon=378):
+        edge = (
+            "#42494b"
+            if m.role in {"cloud", "mountain", "stone", "roof", "wall", "pine", "land", "red"}
+            else None
+        )
+        draw_mark(d, m, COLORS[m.role], edge, 2 if m.role == "cloud" else 1)
+        if m.role == "sea":
+            wavelets(d, t, 378, ["#a0b0ac", "#99a8a2", "#dacfaa", "#324d6a", "#314c6b"], 1900)
+    y, x = np.ogrid[:540, :960]
+    # Low ridges of longitudinal wood grain show through the colored impressions.
+    fiber = (
+        0.5 + 0.5 * np.sin(y * 1.81 + 1.45 * np.sin(x * 0.008 + y * 0.034) + 0.44 * np.sin(x * 0.023))
+    ) ** 9
+    rgb = np.asarray(im, dtype=float)
+    ink = (246 - rgb) * (0.045 * fiber[:, :, None])
+    return grain(Image.fromarray(np.uint8(np.clip(rgb + ink, 0, 255))), 2.6, 1.1)

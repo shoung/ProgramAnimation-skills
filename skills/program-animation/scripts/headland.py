@@ -257,6 +257,13 @@ def landscape(t):
         if m.kind == "line" and m.role == "wall":  # stairs on the original cliff
             continue
         points = m.xy
+        if m.role == "red" and min(x for x, _ in points) > 638:
+            y0 = points[0][1]
+            if y0 == 265:
+                continue
+            start, end = (147, 176) if y0 == 143 else (217, 247)
+            r1, r2 = 13 + (start - 117) * 0.064, 13 + (end - 117) * 0.064
+            points = [(671 - r1, start), (671 + r1, start), (671 + r2, end), (671 - r2, end)]
         if m.role == "bird":
             marks.append(m)
             continue

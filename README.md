@@ -4,7 +4,7 @@
 
 ![同一座燈塔的十二種程序化畫法](skills/program-animation/assets/gallery.jpg)
 
-[逐款看大圖、範例原始碼與取捨](skills/program-animation/references/styles.md)
+[逐款看大圖、範例原始碼與取捨](skills/program-animation/references/styles.md) · [12 款「燈塔」題字與換字方法](skills/program-animation/references/lettering.md)
 
 ## 安裝與使用
 
