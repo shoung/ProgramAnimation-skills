@@ -4,6 +4,8 @@
 
 ## 畫面與時間軸
 
+以核准的[分鏡](storyboard.md)建立共用時間軸，沿用鏡號和已確認的揭露順序。硬切的兩鏡共用同一個影格邊界，疊化則在時間軸標明兩鏡的重疊區間。依鏡內時間驅動動作、圖層與文字變化。跨鏡連續的聲音在全片時間軸上放置一條音軌事件，讓畫面切換時聲音能接續。
+
 ```sh
 python3 -m pip install -r requirements.txt
 python3 scripts/render.py --style clear-line --png /tmp/still.png

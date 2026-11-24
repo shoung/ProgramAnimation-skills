@@ -23,7 +23,7 @@ cp -R skills/animation-grill skills/program-animation "${CODEX_HOME:-$HOME/.code
 
 | 技能 | 工作 |
 |---|---|
-| [program-animation](skills/program-animation/SKILL.md) | 編寫逐鏡稿、推薦三款畫法、依選擇製作、檢查每一幀、合成與校對聲音並交片。 |
+| [program-animation](skills/program-animation/SKILL.md) | 依[分鏡方法](skills/program-animation/references/storyboard.md)把故事拆成可審閱的鏡頭，再選畫法、製作影音並逐幀驗片。 |
 | [animation-grill](skills/animation-grill/SKILL.md) | 每輪可合併多個獨立問題，下一輪依回答追問。初次訪談整理創作簡報，修改時整理時間碼、修改目標、驗收方式及保留項目，等同意後才動手。 |
 
 ## 試畫一鏡
