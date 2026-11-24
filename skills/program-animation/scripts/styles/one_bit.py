@@ -1,14 +1,14 @@
 """Two-ink maritime engraving with a fixed ordered screen and solid-color lettering."""
 
 import numpy as np
-from lettering import titled
-from night import night
 from PIL import Image, ImageFilter
 
+from styles import harbor_frame
 
-@titled("one-bit")
-def frame(t):
-    im = night(t).convert("L")
+
+def dither(image):
+    """Engrave a luminance study with the gallery's fixed two-ink screen."""
+    im = image.convert("L")
     intensity = np.array(im, dtype=float) / 255
     blurred = np.asarray(im.filter(ImageFilter.GaussianBlur(1.4)), dtype=float) / 255
     tone = np.clip((intensity - 0.078) * 1.22 + (intensity - blurred) * 0.95, 0, 1)
@@ -20,3 +20,6 @@ def frame(t):
     ]
     colors = np.array([[27, 33, 43], [235, 226, 195]], dtype="uint8")
     return Image.fromarray(colors[(tone > threshold).astype(int)])
+
+
+frame = harbor_frame("one-bit")

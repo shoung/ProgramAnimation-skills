@@ -1,9 +1,5 @@
-"""A floating axonometric model on a bevel-edged block of sea."""
+"""An orthographic scene model with a beveled harbor base."""
 
-from lettering import titled
-from miniature import render_set
+from styles import harbor_frame
 
-
-@titled("isometric")
-def frame(t):
-    return render_set(t)
+frame = harbor_frame("isometric")

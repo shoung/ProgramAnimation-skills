@@ -20,3 +20,27 @@ CATALOG = {
 
 def renderer(style):
     return import_module("styles." + style.replace("-", "_")).frame
+
+
+def harbor_frame(style):
+    """Bind a style to the harbor scene while retaining frame(t, title, font_path)."""
+
+    def frame(t, title=None, font_path=None):
+        from lettering import STUDY_TITLE, letter
+
+        if style in {"clay", "isometric"}:
+            from harbor_model import model
+
+            image = model(style, t)
+        else:
+            from harbor_plates import drafting, nocturne, print_plate
+
+            if style in {"point-cloud", "one-bit"}:
+                image = nocturne(style, t)
+            elif style == "drafting":
+                image = drafting(t)
+            else:
+                image = print_plate(style, t)
+        return letter(image, style, STUDY_TITLE if title is None else title, font_path)
+
+    return frame

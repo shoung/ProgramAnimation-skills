@@ -1,10 +1,11 @@
 """Registered ink solids with soft screens, a paper border and printer's color controls."""
 
 import numpy as np
-from coast import SIZE, H, W, draw_mark, gradient
-from lettering import titled
+from coast import SIZE, H, W
 from PIL import Image, ImageDraw, ImageFont
-from print_landscape import PALETTE, plate_scene, wavelets
+from print_landscape import PALETTE
+
+from styles import harbor_frame
 
 COLORS = {
     **PALETTE,
@@ -27,14 +28,8 @@ COLORS = {
 }
 
 
-@titled("riso")
-def frame(t):
-    base = gradient([(0, "#aeb9bb"), (90, "#e3cf9e"), (201, "#edc398"), (345, "#f0cfb4")])
-    d = ImageDraw.Draw(base)
-    for m in plate_scene(t, summit=211, horizon=370, cloud_style="puffs"):
-        draw_mark(d, m, COLORS[m.role])
-        if m.role == "sea":
-            wavelets(d, t, 370, ["#626e99", "#9294ac", "#8791b0", "#cca49a"], 1000)
+def print_sheet(base):
+    """Separate a painted scene into screened, slightly misregistered inks."""
     y, x = np.mgrid[:H, :W]
     rgb = np.asarray(base, dtype=float) / 255
     paper = np.array([0.979, 0.955, 0.885])
@@ -59,3 +54,6 @@ def frame(t):
         d.rectangle((28 + j * 12, 525, 36 + j * 12, 530), fill=c)
     d.text((85, 522), "INK PROOF", font=ImageFont.load_default(size=8), fill="#716a76")
     return sheet
+
+
+frame = harbor_frame("riso")

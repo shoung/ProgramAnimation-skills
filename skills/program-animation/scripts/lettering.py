@@ -1,36 +1,39 @@
 """Compose the title as a material in the scene. Coordinates refer to a 960 × 540 study."""
 
-from functools import lru_cache, wraps
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 TYPE = Path(__file__).resolve().parents[1] / "assets/type"
+STUDY_TITLE = "海港電車站"
+
+
+def study_font(family):
+    name = "WenKaiTC-study.ttf" if family == "WenKai" else f"Noto{family}TC-study.ttf"
+    return TYPE / name
+
+
 # Face, nominal size, weight, position, ink. Sizes refer to the actual CJK em.
 RECIPES = {
-    "paper-cut": ("Sans", 61, 850, (40, 40), "#34314c"),
+    "paper-cut": ("Sans", 61, 750, (40, 40), "#34314c"),
     "ink-wash": ("WenKai", 62, 470, (65, 43), "#272621"),
     "woodblock": ("Serif", 54, 730, (93, 49), "#fff0ce"),
     "mineral": ("WenKai", 56, 480, (74, 53), "#382e22"),
-    "clay": ("Sans", 76, 820, (52, 52), "#fff0d5"),
+    "clay": ("Sans", 76, 680, (52, 52), "#fff0d5"),
     "riso": ("Sans", 78, 850, (44, 57), "#3e3658"),
-    "clear-line": ("Serif", 48, 830, (65, 65), "#342d30"),
+    "clear-line": ("Serif", 48, 520, (65, 65), "#342d30"),
     "drafting": ("WenKai", 49, 500, (45, 33), "#4b3d28"),
     "isometric": ("Serif", 60, 370, (58, 56), "#52414b"),
     "point-cloud": ("Serif", 62, 340, (45, 32), "#f4ead1"),
-    "one-bit": ("Sans", 67, 890, (57, 45), "#ebe2c3"),
-    "impasto": ("Serif", 74, 750, (51, 45), "#fff0cc"),
+    "one-bit": ("Sans", 67, 730, (57, 45), "#ebe2c3"),
+    "impasto": ("Serif", 74, 570, (51, 45), "#fff0cc"),
 }
 
 
-def glyphs(text, family, size, weight, path, vertical):
-    if path is None and not set(text) <= set("燈塔海岸風景研究"):
-        raise ValueError(
-            "For other titles, supply a full font with --font (the bundled study fonts are subsets)."
-        )
-    bundled = "WenKaiTC-study.ttf" if family == "WenKai" else f"Noto{family}TC-study.ttf"
-    font = ImageFont.truetype(str(path or TYPE / bundled), size)
+def weighted_font(path, size, weight):
+    font = ImageFont.truetype(str(path), size)
     try:
         axes = font.get_variation_axes()
     except OSError:  # Static faces already specify their weight.
@@ -42,8 +45,15 @@ def glyphs(text, family, size, weight, path, vertical):
                 for a in axes
             ]
         )
+    return font
+
+
+def glyphs(text, family, size, weight, path, vertical):
+    font = weighted_font(path or study_font(family), size, weight)
     missing = bytes(font.getmask("\U0010ffff"))
     if any(bytes(font.getmask(ch)) == missing for ch in text if not ch.isspace()):
+        if path is None:
+            raise ValueError("For other titles, supply a full font with --font (study fonts are subsets).")
         raise ValueError("The selected font lacks a title character")
     if vertical:
         box = Image.new("L", (size * 2, len(text) * (size + 6) + 8))
@@ -61,14 +71,6 @@ def glyphs(text, family, size, weight, path, vertical):
     )
 
 
-def spaced(d, xy, text, size, gap, color):
-    x, y = xy
-    font = ImageFont.load_default(size=size)
-    for ch in text:
-        d.text((round(x), y), ch, font=font, fill=color, anchor="lt")
-        x += font.getlength(ch) + gap
-
-
 @lru_cache(maxsize=32)
 def title_layer(style, title, font_path):
     family, size, weight, (x, y), ink = RECIPES[style]
@@ -77,7 +79,6 @@ def title_layer(style, title, font_path):
     w, h = mask.size
     plate = Image.new("RGBA", (960, 540))
     d = ImageDraw.Draw(plate)
-    paper = title == "燈塔"
 
     def stamp(dx, dy, color, stencil=mask):
         # Source-over preserves the underlying plaque behind antialiased edges.
@@ -113,29 +114,14 @@ def title_layer(style, title, font_path):
             fill="#eee0bd",
             width=2,
         )
-        if paper:
-            small = glyphs("海岸風景", family, 12, 440, None, True)
-            stamp(-24, 3, "#69563e", small)
     elif style == "woodblock":
         d.rectangle((x - 18, y - 17, x + w + 16, y + h + 20), fill="#443831")
         d.rectangle((x - 16, y - 15, x + w + 14, y + h + 18), fill="#ad4836")
         d.rectangle((x - 10, y - 9, x + w + 8, y + h + 12), outline="#d98a62", width=2)
-        if paper:
-            small = glyphs("海岸風景研究", "Serif", 14, 650, None, True)
-            d.rectangle(
-                (x - 47, y - 8, x - 19, y + small.height + 8), fill="#f3e5c6", outline="#595044", width=2
-            )
-            stamp(-41, 0, "#594838", small)
     elif style == "clear-line":
-        right = x + w + (111 if paper else 22)
+        right = x + w + 22
         d.rectangle((x - 19, y - 14, right + 4, y + h + 29), fill="#3c3540")
         d.rectangle((x - 23, y - 19, right, y + h + 24), fill="#ffe5a2", outline="#40383f", width=3)
-        if paper:
-            spaced(d, (x + w + 13, y + 8), "THE LIGHTHOUSE", 9, 0.45, ink)
-            d.line((x + w + 13, y + 24, right - 11, y + 24), fill=ink)
-    elif style == "drafting" and paper:
-        spaced(d, (x + w + 18, y - 1), "PHAROS", 14, 2.8, ink)
-        spaced(d, (x + w + 18, y + 24), "coastal light station", 9, 0.65, ink)
     elif style == "clay":
         stamp(4, 7, "#9c6156")
         stamp(1, 4, "#c97964")
@@ -153,21 +139,16 @@ def title_layer(style, title, font_path):
     elif style == "point-cloud":
         padded = Image.new("L", (w + 22, h + 22))
         padded.paste(mask, (11, 11))
-        stamp(
-            -11, -9, "#171a1c", padded.filter(ImageFilter.MaxFilter(7)).filter(ImageFilter.GaussianBlur(2))
-        )
+        stamp(-11, -9, "#171a1c", padded.filter(ImageFilter.MaxFilter(7)).filter(ImageFilter.GaussianBlur(2)))
         stamp(-11, -11, "#dac6a0", padded.filter(ImageFilter.GaussianBlur(2.7)))
         mask = Image.fromarray(np.uint8(np.asarray(mask) * (0.48 + 0.52 * rng.random((h, w)))))
     elif style == "one-bit":
         d.rectangle(
-            (x - 24, y - 20, x + w + (97 if paper else 22), y + h + 38),
+            (x - 24, y - 20, x + w + 22, y + h + 38),
             fill="#1b212b",
             outline=ink,
             width=2,
         )
-        if paper:
-            for i, word in enumerate(("THE", "LIGHT", "HOUSE")):
-                spaced(d, (x + w + 15, y + i * 15), word, 12, 1.6, ink)
     elif style == "impasto":
         stamp(1, 2, "#c89086")
         # Paint drag leaves ridges along the diagonal nib and small breaks at stroke ends.
@@ -177,16 +158,6 @@ def title_layer(style, title, font_path):
         oily = np.array([243, 224, 187]) + drag[:, :, None] * [12, 13, 17]
         ink = Image.fromarray(oily.astype("uint8"))
     stamp(0, 0, ink, mask)
-    if paper and style in {"clay", "paper-cut", "riso", "isometric", "impasto", "point-cloud"}:
-        sub = {"paper-cut": "#514957", "riso": "#343967", "clay": "#8e4d44", "impasto": "#ffebd2"}.get(
-            style, ink
-        )
-        spaced(d, (x, y + h + 8), "THE LIGHTHOUSE", 12, 2.1, sub)
-        if style == "riso":
-            d.line((x, y + h + 28, x + w + 8, y + h + 28), fill="#367eaa", width=3)
-    if paper and style in {"one-bit", "clear-line"}:
-        small = glyphs("海岸風景研究", "Sans", 12, 690, None, False)
-        stamp(0, h + 9, ink, small)
     bounds = plate.getbbox()
     plate = plate.crop(bounds)
     if style == "one-bit":
@@ -201,23 +172,10 @@ def title_layer(style, title, font_path):
     return bounds[:2], plate
 
 
-def letter(im, style, title="燈塔", font_path=None):
+def letter(im, style, title=STUDY_TITLE, font_path=None):
     """Apply the title at 960 × 540. An empty string returns the clean artwork."""
     if not title.strip():
         return im
     pos, plate = title_layer(style, title, font_path)
     im.paste(plate, pos, plate.getchannel("A"))
     return im
-
-
-def titled(style):
-    """Give a frame renderer reusable title and font arguments."""
-
-    def decorate(draw_scene):
-        @wraps(draw_scene)
-        def frame(t, title="燈塔", font_path=None):
-            return letter(draw_scene(t), style, title, font_path)
-
-        return frame
-
-    return decorate

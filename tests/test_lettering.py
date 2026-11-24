@@ -28,8 +28,8 @@ class LetteringTests(unittest.TestCase):
 
     def test_packaged_faces_cover_traditional_characters(self):
         for family in ("Serif", "Sans", "WenKai"):
-            a = glyphs("燈", family, 52, 550, None, False)
-            b = glyphs("塔", family, 52, 550, None, False)
+            a = glyphs("電", family, 52, 550, None, False)
+            b = glyphs("車", family, 52, 550, None, False)
             self.assertTrue(a.getbbox() and b.getbbox())
             self.assertNotEqual(a.tobytes(), b.tobytes())
         with self.assertRaisesRegex(ValueError, "--font"):

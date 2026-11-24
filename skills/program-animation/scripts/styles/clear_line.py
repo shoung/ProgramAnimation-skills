@@ -2,10 +2,10 @@
 
 import math
 
-from coast import BASE, SIZE, H, Mark, W, draw_mark
-from headland import landscape
-from lettering import titled
+from coast import BASE
 from PIL import Image, ImageChops, ImageDraw
+
+from styles import harbor_frame
 
 SCALE = 2
 INK = "#423442"
@@ -73,76 +73,4 @@ def hatching(im, mark):
     im.paste(color, (left, top), ImageChops.multiply(strokes, mask))
 
 
-@titled("clear-line")
-def frame(t):
-    size = (W * SCALE, H * SCALE)
-    im = Image.new("RGB", size)
-    pen = ImageDraw.Draw(im)
-    # Broad pastel bands in the sky and short tide lines leave the silhouettes legible.
-    for i in range(60):
-        f = i / 59
-        rgb = tuple(round(a + (b - a) * f) for a, b in zip((93, 168, 179), (250, 232, 189)))
-        pen.rectangle((0, i * 7 * SCALE, size[0], (i + 1) * 7 * SCALE), fill=rgb)
-    for original in landscape(t):
-        role = original.role
-        m = Mark(
-            original.kind, role, [(x * SCALE, y * SCALE) for x, y in original.xy], original.width * SCALE
-        )
-        if role in {"face", "shade", "shadow"}:
-            if role == "shadow" and min(x for x, _ in original.xy) < 570:  # gable projects beyond the house
-                draw_mark(pen, m, COLORS["wall"], INK, 2 * SCALE)
-            hatching(im, m)
-            continue
-        heavy = role in {"stone", "wall", "roof", "red", "pine", "hull"}
-        weight = 3.5 if heavy else 2.2
-        if role in {"dark", "glass", "lamp", "leaf", "land"}:
-            weight = 1.35
-        edge = None if role == "sea" else (INK if heavy else "#645064")
-        if role == "crest":
-            edge = None
-        if role == "sun":
-            edge, weight = "#b0a082", 1.7
-        draw_mark(pen, m, COLORS[role], edge, round(weight * SCALE))
-        if role == "cloud":
-            xs, ys = zip(*m.xy)
-            left, right, top, bottom = min(xs), max(xs), min(ys), max(ys)
-            w, h = right - left, bottom - top
-            # The underside only picks up a few curved strokes; the tops stay open.
-            cloud_mask = Image.new("L", (math.ceil(w) + 2, math.ceil(h) + 2))
-            ImageDraw.Draw(cloud_mask).polygon([(x - left, y - top) for x, y in m.xy], fill=255)
-            strokes = Image.new("L", cloud_mask.size)
-            brush = ImageDraw.Draw(strokes)
-            for x in range(0, math.ceil(w), 4 * SCALE):
-                u = x / w
-                start = h * (0.79 + 0.06 * math.cos(5 * math.pi * u))
-                brush.line(
-                    [(x, start), (x + 2 * SCALE, start + h * 0.08), (x + 6 * SCALE, h)],
-                    fill=180,
-                    width=SCALE,
-                )
-            im.paste("#ba98a3", (int(left), int(top)), ImageChops.multiply(strokes, cloud_mask))
-            for u, lean in [(0.27, -1), (0.68, 1)]:
-                # Two short curved interior pen marks describe the puffy lobes.
-                pen.line(
-                    [
-                        (left + w * (u + lean * 0.055 * v * v), top + h * (0.83 - 0.32 * v))
-                        for v in (0, 0.2, 0.4, 0.6, 0.8, 1)
-                    ],
-                    fill="#b796a0",
-                    width=SCALE,
-                )
-        if role == "sea":
-            for i in range(220):
-                y = 379 + (i * 29) % 166
-                x = (i * i * 57 + i * 79) % 1031 - 43 + 4 * math.sin(t + i)
-                length = 7 + (i * 11) % 43
-                pen.line(
-                    [
-                        (x * SCALE, y * SCALE),
-                        ((x + length * 0.4) * SCALE, (y - 0.55) * SCALE),
-                        ((x + length) * SCALE, y * SCALE),
-                    ],
-                    fill="#579d98",
-                    width=SCALE if i % 4 else 2 * SCALE,
-                )
-    return im.resize(SIZE, Image.Resampling.LANCZOS)
+frame = harbor_frame("clear-line")

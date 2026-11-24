@@ -4,9 +4,10 @@ import math
 import random
 
 import numpy as np
-from coast import H, W, gradient, grain, paint, scene
-from lettering import titled
+from coast import H, W, grain
 from PIL import ImageDraw
+
+from styles import harbor_frame
 
 COLORS = {
     "sun": "#ffe3a4",
@@ -29,10 +30,8 @@ COLORS = {
 }
 
 
-@titled("impasto")
-def frame(t):
-    sky = gradient([(0, "#524e98"), (90, "#8d6eae"), (180, "#e39b9d"), (305, "#efbb8b")])
-    im = paint(scene(t), COLORS, sky)
+def paint_strokes(im, direction, brush_scale=None):
+    """Lay the same three sizes of short, loaded strokes along a subject-specific field."""
     rgb = np.array(im, dtype=float)
     out = im.copy()
     d = ImageDraw.Draw(out)
@@ -41,13 +40,12 @@ def frame(t):
         for _ in range(count):
             x = rng.randrange(W)
             y = rng.randrange(H)
-            angle = -0.63 + 0.44 * math.sin(x * 0.012 + y * 0.021)
-            if y > 315:
-                angle = -0.13 + 0.13 * math.sin(y * 0.08)
-            if 643 < x < 697 and 60 < y < 300:
-                angle = -1.21
+            angle = direction(x, y)
             length = base_len * rng.uniform(0.55, 1.55)
             width = base_w * rng.uniform(0.55, 1.45)
+            if brush_scale is not None:
+                length *= brush_scale[y, x]
+                width *= brush_scale[y, x]
             # Smaller strokes near a silhouette keep the architecture legible.
             near = rgb[min(H - 1, y + 3), min(W - 1, x + 3)]
             if np.max(abs(near - rgb[y, x])) > 30:
@@ -82,3 +80,6 @@ def frame(t):
                     fill=light,
                 )
     return grain(out, 1.8)
+
+
+frame = harbor_frame("impasto")

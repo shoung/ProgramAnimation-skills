@@ -2,9 +2,9 @@
 
 把一句動畫想法做成可播放的影片。先逐題訪談，把劇本與分鏡寫在對話裡；定稿後用真實預覽選畫法，再用程式生成畫面、旁白、音樂和音效。題材、片長、螢幕方向與製作引擎都可依委託調整。
 
-![同一座燈塔的十二種程序化畫法](skills/program-animation/assets/gallery.jpg)
+![同一座海港電車站的十二種程序化畫法](skills/program-animation/assets/gallery.png)
 
-[逐款看大圖、範例原始碼與取捨](skills/program-animation/references/styles.md) · [12 款「燈塔」題字與換字方法](skills/program-animation/references/lettering.md)
+[逐款看大圖、範例原始碼與取捨](skills/program-animation/references/styles.md) · [12 款「海港電車站」題字與換字方法](skills/program-animation/references/lettering.md)
 
 ## 安裝與使用
 
@@ -34,8 +34,8 @@ cp -R skills/animation-grill skills/program-animation "${CODEX_HOME:-$HOME/.code
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r skills/program-animation/requirements.txt
-python skills/program-animation/scripts/render.py --style one-bit --png /tmp/lighthouse.png
-python skills/program-animation/scripts/render.py --style paper-cut --seconds 4 --fps 24 --video /tmp/lighthouse.mp4
+python skills/program-animation/scripts/render.py --style one-bit --png /tmp/harbor-tram.png
+python skills/program-animation/scripts/render.py --style paper-cut --seconds 4 --fps 24 --video /tmp/harbor-tram.mp4
 ```
 
 [聲音合成範例、空白幀復原與成片驗證](skills/program-animation/references/production.md)

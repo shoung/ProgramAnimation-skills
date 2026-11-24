@@ -6,6 +6,8 @@ from pathlib import Path
 
 from checked_render import checked_frame, encode
 from coast import SIZE
+from harbor_scene import PREVIEW_PHASE
+from lettering import STUDY_TITLE
 from styles import CATALOG, renderer
 
 
@@ -18,20 +20,15 @@ def main():
     p.add_argument("--seconds", type=float, default=4)
     p.add_argument("--fps", type=int, default=24)
     p.add_argument("--audio", type=Path, help="Optional pre-mixed audio track for the MP4")
-    p.add_argument("--phase", type=float, default=0.85, help="Still image phase in radians")
+    p.add_argument("--phase", type=float, default=PREVIEW_PHASE, help="Still image phase in radians")
     p.add_argument(
         "--title",
-        default="燈塔",
-        help="Text styled within the scene; pass an empty string for a clean frame",
+        default=STUDY_TITLE,
+        help="Text styled within the scene; pass an empty string to omit the title overlay",
     )
     p.add_argument("--font", type=Path, help="Full font covering a custom title (TTF, OTF, or TTC)")
     args = p.parse_args()
-    if (
-        not math.isfinite(args.seconds)
-        or args.seconds <= 0
-        or args.fps <= 0
-        or not math.isfinite(args.phase)
-    ):
+    if not math.isfinite(args.seconds) or args.seconds <= 0 or args.fps <= 0 or not math.isfinite(args.phase):
         p.error("seconds and fps must be positive and phase must be finite")
     if args.png and args.audio:
         p.error("--audio requires --video")
