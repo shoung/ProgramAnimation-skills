@@ -1,6 +1,6 @@
 # ProgramAnimation-skills
 
-把一句動畫想法做成可播放的影片。先逐題訪談，把劇本與分鏡寫在對話裡；定稿後用真實預覽選畫法，再用程式生成畫面、旁白、音樂和音效。題材、片長、螢幕方向與製作引擎都可依委託調整。
+把一句動畫想法做成可播放的影片。先分輪訪談，把劇本與分鏡寫在對話裡。定稿後用真實預覽選畫法，再用程式生成畫面、旁白、音樂和音效。題材、片長、螢幕方向與製作引擎都可依委託調整。
 
 ![同一座海港電車站的十二種程序化畫法](skills/program-animation/assets/gallery.png)
 
@@ -24,7 +24,7 @@ cp -R skills/animation-grill skills/program-animation "${CODEX_HOME:-$HOME/.code
 | 技能 | 工作 |
 |---|---|
 | [program-animation](skills/program-animation/SKILL.md) | 編寫逐鏡稿、推薦三款畫法、依選擇製作、檢查每一幀、合成與校對聲音並交片。 |
-| [animation-grill](skills/animation-grill/SKILL.md) | 一次追問一個創作決定。初稿整理創作簡報；修改時整理時間碼、修改目標、驗收方式及保留項目，等同意後才動手。 |
+| [animation-grill](skills/animation-grill/SKILL.md) | 每輪可合併多個獨立問題，下一輪依回答追問。初次訪談整理創作簡報，修改時整理時間碼、修改目標、驗收方式及保留項目，等同意後才動手。 |
 
 ## 試畫一鏡
 
