@@ -19,6 +19,8 @@ cp -R skills/animation-grill skills/program-animation "${CODEX_HOME:-$HOME/.code
 
 開啟新的 Codex 對話，輸入「用 `$program-animation` 幫我做一支給家人看的直式短片。我最記得外婆每天拉開早餐店鐵門的聲音。」也可以用 `$animation-grill` 先把想法問清楚。
 
+每個 AI agent session 第一次使用任一技能時，會先檢查原倉庫的版本，再顯示 SHOUNG ASCII 標記、歡迎詞和使用方式。若有新版，會先讓你選擇更新或沿用目前版本。較早安裝的版本可先從原倉庫取得新版，再依上方步驟同步更新兩個資料夾。有自訂內容時，先比對或備份再複製。
+
 | 技能 | 工作 |
 |---|---|
 | [program-animation](skills/program-animation/SKILL.md) | 編寫逐鏡稿、推薦三款畫法、依選擇製作、檢查每一幀、合成與校對聲音並交片。 |
@@ -37,3 +39,5 @@ python skills/program-animation/scripts/render.py --style paper-cut --seconds 4 
 ```
 
 [聲音合成範例、空白幀復原與成片驗證](skills/program-animation/references/production.md)
+
+發布新版時，同步提高 [VERSION](skills/program-animation/VERSION) 的版本號，讓使用者在下一個 session 收到更新提示。
