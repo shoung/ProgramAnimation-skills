@@ -1,0 +1,15 @@
+{
+  "duration": 6,
+  "narration": [{
+    "at": 0.7,
+    "text": "2026 年，重安港的燈亮了。",
+    "spoken": "二零二六年，崇安港的燈亮了。",
+    "readings": {
+      "polyphones": [{"term": "重", "as": "chóng，第二聲"}],
+      "names": [{"term": "重安港", "as": "chóng ān gǎng", "listen": "虛構港名，暫讀「崇安港」，請確認第一個字。"}],
+      "numbers": [{"term": "2026", "as": "二零二六，年份逐位念"}]
+    }
+  }],
+  "music": {"beat_seconds": 0.75, "gain": 0.09, "chords": [[196, 246.94, 293.66], [164.81, 196, 246.94]]},
+  "effects": [{"kind": "surf", "at": 0, "seconds": 2.1, "gain": 0.07}, {"kind": "bell", "at": 4.8, "seconds": 1.1, "gain": 0.05}]
+}

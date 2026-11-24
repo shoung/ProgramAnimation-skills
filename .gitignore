@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+# Original visual brief stays local. Public previews are drawn from source.
+/style.png
