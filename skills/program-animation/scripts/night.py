@@ -1,4 +1,4 @@
-"""A moving beam and its water reflection for the two night studies."""
+"""A moving beam and its water reflection for the one-bit dither study."""
 
 import numpy as np
 from coast import H, W, gradient, paint, scene

@@ -11,7 +11,7 @@ python3 scripts/render.py --style clear-line --seconds 6 --fps 24 --video /tmp/s
 python3 scripts/gallery.py
 ```
 
-每一款的 `frame(t)` 接受以弧度表示的一個循環相位，回傳 Pillow 圖像。`coast.py` 描述圖形版的場景與語意色塊，`miniature.py` 提供等角模型，`night.py` 提供夜景光束。要製作全新的影片，可讓 `draw_shot(i)` 依總幀號查找鏡頭及鏡內時間，再選對應的畫法。長片可按鏡頭分批，快取檔以來源版本、參數與幀號對應，接續渲染時重新驗證讀回的影格。
+每一款的 `frame(t)` 接受以弧度表示的一個循環相位，回傳 Pillow 圖像。`coast.py` 描述圖形版的場景與語意色塊，`miniature.py` 提供等角模型。`headland.py` 提供清線與彩色點雲共用的海岬構圖，點雲程式自繪粒子光束，`night.py` 則供雙色抖動取樣夜景。要製作全新的影片，可讓 `draw_shot(i)` 依總幀號查找鏡頭及鏡內時間，再選對應的畫法。長片可按鏡頭分批，快取檔以來源版本、參數與幀號對應，接續渲染時重新驗證讀回的影格。
 
 ## 每幀檢查與恢復
 
